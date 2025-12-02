@@ -1,0 +1,44 @@
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+# Synthetic seasonal revenue data (36 months)
+rng = pd.date_range(start='2023-01-01', periods=36, freq='M')
+np.random.seed(42)
+base = 10_000_000
+trend = np.linspace(0, 2_000_000, len(rng))
+seasonality = 1_000_000 * np.sin(2 * np.pi * (rng.month - 1) / 12)
+noise = np.random.normal(loc=0, scale=300_000, size=len(rng))
+revenue = base + trend + seasonality + noise
+
+df = pd.DataFrame({
+    'date': rng,
+    'year': rng.year,
+    'month_num': rng.month,
+    'month': rng.month_name().str[:3],
+    'revenue': revenue
+})
+
+# Styling
+sns.set_style('whitegrid')
+sns.set_context('talk')
+
+# 8x8 inches at 64 DPI -> 512x512 px
+plt.figure(figsize=(8, 8))
+
+ax = sns.lineplot(data=df, x='date', y='revenue', marker='o', linewidth=2.25, label='Monthly Revenue', color='#1f77b4')
+
+# Seasonal average overlay (mapped to month midpoints for visualization)
+seasonal = df.groupby('month_num').revenue.mean().reset_index()
+seasonal_x = pd.to_datetime('2023-' + seasonal['month_num'].astype(str) + '-15')
+sns.lineplot(x=seasonal_x, y=seasonal['revenue'], linestyle='--', linewidth=2, label='Avg Seasonal Revenue', color='#ff7f0e')
+
+ax.set_title('Monthly Revenue — Seasonal Trend (Synthetic)', fontsize=16)
+ax.set_xlabel('Date')
+ax.set_ylabel('Revenue (USD)')
+ax.legend()
+
+# Save exactly 512x512 pixels (no bbox_inches)
+plt.savefig('chart.png', dpi=64)
+plt.close()
